@@ -1,19 +1,110 @@
-DROP TABLE IF EXISTS post;
-DROP TABLE IF EXISTS usr;
-
-CREATE TABLE usr (
-  id SERIAL PRIMARY KEY NOT NULL,
-  username TEXT UNIQUE NOT NULL,
-  password TEXT NOT NULL
+CREATE TABLE Organisation
+(
+    orgId serial PRIMARY KEY,
+    name TEXT not null,
+    type TEXT,
+    UNIQUE(name)
 );
 
-CREATE TABLE post (
-  id SERIAL PRIMARY KEY NOT NULL,
-  author_id INTEGER NOT NULL,
-  created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  title TEXT NOT NULL,
-  body TEXT NOT NULL,
-  FOREIGN KEY (author_id) REFERENCES usr (id)
+CREATE TABLE Slot
+(
+    slotId serial PRIMARY KEY,
+    slotCode VARCHAR(6),
+    orgId INT,
+    UNIQUE(orgId, slotCode),
+    FOREIGN KEY(orgId)
+        REFERENCES Organisation(orgId)
 );
 
-SELECT version();
+CREATE TABLE SlotSchedule
+(
+    slotId INT,
+    day INT,
+    startTime TIME,
+    endTime TIME,
+    PRIMARY KEY(slotId, day),
+    FOREIGN KEY(slotId) REFERENCES Slot
+);
+
+CREATE TABLE Course
+(
+    courseId serial PRIMARY KEY,
+    kyc text,
+    type text,
+    -- theory, practice, both
+    title text,
+    courseCode text,
+    orgId INT,
+    FOREIGN KEY(orgId)
+        REFERENCES Organisation(orgId),
+    UNIQUE(courseCode, orgId)
+);
+
+CREATE TABLE Offering
+(
+    offeringId serial PRIMARY KEY,
+    courseId INT,
+
+    practiceRating REAL DEFAULT 0.0,
+    contentRating REAL DEFAULT 0.0,
+    thoeryRating REAL DEFAULT 0.0,
+    litemeter REAL DEFAULT 0.0,
+    nratings INT DEFAULT 0,
+
+    referenceBooks TEXT,
+    gradingScheme TEXT,
+    instructor TEXT,
+
+    slotId INT,
+    startDate DATE,
+    endDate DATE,
+
+    previousOfferingId INT DEFAULT NULL,
+
+    FOREIGN KEY(courseId)
+        REFERENCES Course(courseId),
+
+    FOREIGN KEY(previousOfferingId)
+        REFERENCES Offering(offeringId),
+
+    FOREIGN KEY(slotId)
+        REFERENCES Slot(slotId)
+);
+
+CREATE TABLE Usr
+(
+    userId serial PRIMARY KEY,
+    name TEXT,
+    email TEXT UNIQUE,
+    token JSON
+);
+
+CREATE TABLE Resources
+(
+    resourceId serial PRIMARY KEY,
+    offeringId INT,
+    userId INT,
+    type TEXT,
+    --test, quiz, exam, midsem, tutorial, assignment
+    link TEXT,
+    --optional
+    about TEXT,
+
+    FOREIGN KEY(offeringId)
+        REFERENCES Offering(offeringId),
+
+    FOREIGN KEY(userId)
+        REFERENCES Usr(userId)
+);
+
+CREATE TABLE Subscriptions
+(
+    userId INT not null,
+    offeringId INT not null,
+
+    FOREIGN KEY(userId)
+        REFERENCES Usr(userId),
+
+    FOREIGN KEY(offeringId)
+        REFERENCES Offering(offeringId)
+);
