@@ -4,12 +4,15 @@
 # )
 import datetime
 from app.db import get_db, exec_sql, rollback_db
+from app.gauth.routes import gmail_service
+
 
 def fixDates(inpDict: dict) -> dict:
     for key in inpDict:
         if type(inpDict[key]) == datetime.date:
             inpDict[key] = inpDict[key].strftime("%Y-%m-%d")
     return inpDict
+
 
 def getId(cur):
     return cur.fetchone()[0]
@@ -21,8 +24,9 @@ def getAll(cur):
 
 
 def getRow(cur):
+    row = cur.fetchone()
     colNames = [col[0] for col in cur.description]
-    return fixDates(dict(zip(colNames, cur.fetchone())))
+    return fixDates(dict(zip(colNames, row))) if row else "User not found"
 
 
 def errorHandler(func):
@@ -279,10 +283,10 @@ class ListSlots(Read):
 class Usr(Create, Read):
     @staticmethod
     @errorHandler
-    def create(name, email, token):
+    def create(email, token):
         cur = exec_sql(f'''
-            INSERT INTO Usr(name, email, token)
-            VALUES (\'{name}\', \'{email}\', \'{token}\')
+            INSERT INTO Usr(email, token)
+            VALUES (\'{email}\', \'{token.to_json()}\')
             RETURNING userId;
         ''')
 
@@ -297,6 +301,27 @@ class Usr(Create, Read):
         ''')
 
         return getRow(cur)
+
+    @staticmethod
+    @errorHandler
+    def readE(email: str) -> tuple:
+        cur = exec_sql(f'''
+            SELECT * FROM Usr
+            WHERE email = \'{email}\';
+        ''')
+
+        return getRow(cur)
+
+    @staticmethod
+    @errorHandler
+    def update(email, token):
+        cur = exec_sql(f'''
+            UPDATE Usr
+            SET token = \'{token.to_json()}\'
+            WHERE email = \'{email}\';
+        ''')
+
+        return 'cool'
 
 
 class Subscription(Create, Delete):
@@ -347,3 +372,14 @@ def getSlotIdByCode(orgId: int, slotCode: str) -> int:
     ''')
 
     return cur.fetchone()[0] if cur.rowcount else -1
+
+
+def signin(credentials):
+    gmail = gmail_service(credentials)
+    email = gmail.users().getProfile(userId='me').execute()['emailAddress']
+    row = Usr.readE(email)
+    if row == "User not found":
+        return Usr.create(email, credentials)
+    Usr.update(email, credentials)
+    print(f"dekho dekho {row}")
+    return row['userid']

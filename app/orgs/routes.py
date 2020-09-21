@@ -67,7 +67,6 @@ class ListSlots(Resource):
         reqBody = request.get_json()
         slotId, status = dbOps.makeSlot(orgId, reqBody)
         return make_response(f'Slot indexed at : {slotId}, schedule status : {status}')
-        # return jsonify(request.json)
 
 
 class Course(Resource):
@@ -122,8 +121,6 @@ class Rating(Resource):
     def post(self, orgId, courseId, offeringId):
         # parameters and values
         return jsonify(request.json)
-
-# Resc -> Resource
 
 
 class ListResources(Resource):

@@ -48,9 +48,9 @@ SELECT *
 FROM Offering INNER JOIN Course ON Offering.courseId = Course.courseId;
 
 INSERT INTO Usr
-    (name, email, token)
+    (email, token)
 VALUES
-    ('megatron', 'megatron10599@gmail.com', '{"key": "1"}');
+    ('megatron10599@gmail.com', '{"key": "1"}');
 
 SELECT *
 FROM Usr;

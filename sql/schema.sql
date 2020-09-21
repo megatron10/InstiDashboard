@@ -74,7 +74,6 @@ CREATE TABLE Offering
 CREATE TABLE Usr
 (
     userId serial PRIMARY KEY,
-    name TEXT,
     email TEXT UNIQUE,
     token JSON
 );

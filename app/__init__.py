@@ -5,6 +5,7 @@ from flask import Flask
 
 def create_app(test_config=None):
     """Create and configure the app"""
+    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
     app = Flask(__name__, instance_relative_config=True)
 
     # Not actually mapping yet
@@ -39,6 +40,9 @@ def create_app(test_config=None):
 
     from .orgs import orgs_bp
     app.register_blueprint(orgs_bp)
+
+    from .gauth import gauth_bp
+    app.register_blueprint(gauth_bp)
 
     # a simple index page that says hello
     @app.route('/')
