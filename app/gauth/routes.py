@@ -59,9 +59,9 @@ def auth_error_on_fail(func):
 def login_required(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if 'id' not in flask.session:
+        if 'id' not in flask.session or type(flask.session['id']) != int:
             print('I\'m useful')
-            return flask.redirect('authorize')
+            return flask.redirect(flask.url_for('gauth.authorize'))
         return func(*args, **kwargs)
     return wrapper
 
@@ -148,7 +148,9 @@ def oauth2callback():
     flow.fetch_token(authorization_response=authorization_response)
 
     credentials = flow.credentials
-    id = dbOps.signin(credentials)
+    gmail = gmail_service(credentials)
+    email = gmail.users().getProfile(userId='me').execute()['emailAddress']
+    id = dbOps.signin(email, credentials)
     flask.session['id'] = id
 
     return flask.redirect(flask.url_for('gauth.test_api_request'))

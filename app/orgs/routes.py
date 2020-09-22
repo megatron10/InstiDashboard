@@ -10,6 +10,7 @@ from app.db import get_db, exec_sql
 import app.dbOps as dbOps
 
 
+
 class ListOrgs(Resource):
     def get(self):
         return dbOps.ListOrgs.read()
@@ -28,7 +29,6 @@ class ListOrgs(Resource):
 
 class ListCourses(Resource):
     def get(self, orgId):
-        # # fetch list of courses (dictionaries with SQL columns as keys)
         return dbOps.ListCourses.read(orgId)
 
     def post(self, orgId):

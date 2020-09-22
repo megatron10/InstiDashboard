@@ -38,11 +38,11 @@ def create_app(test_config=None):
     from . import auth
     app.register_blueprint(auth.bp)
 
-    from .orgs import orgs_bp
-    app.register_blueprint(orgs_bp)
-
     from .gauth import gauth_bp
     app.register_blueprint(gauth_bp)
+
+    from .orgs import orgs_bp
+    app.register_blueprint(orgs_bp)
 
     # a simple index page that says hello
     @app.route('/')

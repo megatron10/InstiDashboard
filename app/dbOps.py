@@ -4,7 +4,6 @@
 # )
 import datetime
 from app.db import get_db, exec_sql, rollback_db
-from app.gauth.routes import gmail_service
 
 
 def fixDates(inpDict: dict) -> dict:
@@ -26,7 +25,7 @@ def getAll(cur):
 def getRow(cur):
     row = cur.fetchone()
     colNames = [col[0] for col in cur.description]
-    return fixDates(dict(zip(colNames, row))) if row else "User not found"
+    return fixDates(dict(zip(colNames, row))) if row else "NA"
 
 
 def errorHandler(func):
@@ -373,13 +372,9 @@ def getSlotIdByCode(orgId: int, slotCode: str) -> int:
 
     return cur.fetchone()[0] if cur.rowcount else -1
 
-
-def signin(credentials):
-    gmail = gmail_service(credentials)
-    email = gmail.users().getProfile(userId='me').execute()['emailAddress']
+def signin(email, credentials):
     row = Usr.readE(email)
-    if row == "User not found":
+    if row == "NA":
         return Usr.create(email, credentials)
     Usr.update(email, credentials)
-    print(f"dekho dekho {row}")
     return row['userid']
