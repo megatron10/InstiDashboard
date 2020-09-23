@@ -19,7 +19,7 @@ def getId(cur):
 
 def getAll(cur):
     colNames = [col[0] for col in cur.description]
-    return [dict(zip(colNames, row)) for row in cur.fetchall()]
+    return [fixDates(dict(zip(colNames, row))) for row in cur.fetchall()]
 
 
 def getRow(cur):
@@ -69,9 +69,9 @@ class Organisation(Create):
     @errorHandler
     def create(name: str, type: str) -> int:
         cur = exec_sql(f'''
-            INSERT INTO Organisation(name, type)
+            INSERT INTO organisation(name, type)
             VALUES (\'{name}\', \'{type}\')
-            RETURNING orgId; ''')
+            RETURNING org_id; ''')
 
         return getId(cur)  # return id of new org
 
@@ -80,7 +80,7 @@ class ListOrgs(Read):
     @staticmethod
     @errorHandler
     def read() -> list:
-        cur = exec_sql(f'''SELECT * FROM Organisation;''')
+        cur = exec_sql(f'''SELECT * FROM organisation;''')
 
         return getAll(cur)
 
@@ -88,20 +88,20 @@ class ListOrgs(Read):
 class Course(Create, Read):
     @staticmethod
     @errorHandler
-    def create(kyc: str, type: str, title: str, courseCode: str, orgId: int) -> int:
+    def create(kyc: str, type: str, title: str, course_code: str, org_id: int) -> int:
         cur = exec_sql(f'''
-            INSERT INTO Course(kyc, type, title, courseCode, orgId)
-            VALUES (\'{kyc}\', \'{type}\', \'{title}\', \'{courseCode}\', {orgId})
-            RETURNING courseId; ''')
+            INSERT INTO course(kyc, type, title, course_code, org_id)
+            VALUES (\'{kyc}\', \'{type}\', \'{title}\', \'{course_code}\', {org_id})
+            RETURNING course_id; ''')
 
         return getId(cur)
 
     @ staticmethod
     @errorHandler
-    def read(courseId: int) -> tuple:
+    def read(course_id: int) -> tuple:
         cur = exec_sql(f'''
-            SELECT * FROM Course
-            WHERE courseId = {courseId};
+            SELECT * FROM course
+            WHERE course_id = {course_id};
         ''')
 
         return getRow(cur)
@@ -110,10 +110,10 @@ class Course(Create, Read):
 class ListCourses(Read):
     @ staticmethod
     @ errorHandler
-    def read(orgId: int) -> list:
+    def read(org_id: int) -> list:
         cur = exec_sql(f'''
-            SELECT * FROM Course
-            WHERE orgId = {orgId};
+            SELECT * FROM course
+            WHERE org_id = {org_id};
         ''')
 
         return getAll(cur)
@@ -122,21 +122,20 @@ class ListCourses(Read):
 class Offering(Create, Read):
     @staticmethod
     @errorHandler
-    def read(offeringId: int) -> tuple:
+    def read(offering_id: int) -> tuple:
         cur = exec_sql(f'''
-            SELECT * FROM Offering
-            WHERE offeringId = {offeringId};
+            SELECT * FROM offering
+            WHERE offering_id = {offering_id};
         ''')
-        print('HEY')
         return getRow(cur)
 
     @staticmethod
     @errorHandler
-    def create(courseId: int, referenceBooks: str, gradingScheme: str, instructor: str, slotId: int, startDate: str, endDate: str, previousOfferingId: int) -> int:
+    def create(course_id: int, cal_link: str, grading_scheme: str, instructor: str, slot_id: int, start_date: str, end_date: str, previous_offering_id: int) -> int:
         cur = exec_sql(f'''
-            INSERT INTO Offering(courseId, referenceBooks, gradingScheme, instructor, slotId, startDate, endDate, previousOfferingId)
-            VALUES ({courseId}, \'{referenceBooks}\', \'{gradingScheme}\', \'{instructor}\', {slotId}, \'{startDate}\', \'{endDate}\', {previousOfferingId if previousOfferingId != None else "NULL"})
-            RETURNING offeringId;
+            INSERT INTO Offering(course_id, cal_link, grading_scheme, instructor, slot_id, start_date, end_date, previous_offering_id)
+            VALUES ({course_id}, \'{cal_link}\', \'{grading_scheme}\', \'{instructor}\', {slot_id}, \'{start_date}\', \'{end_date}\', {previous_offering_id if previous_offering_id != None else "NULL"})
+            RETURNING offering_id;
         ''')
 
         return getId(cur)
@@ -145,60 +144,58 @@ class Offering(Create, Read):
 class ListOfferings(Read):
     @staticmethod
     @errorHandler
-    def read(courseId: int) -> list:
+    def read(course_id: int) -> list:
         cur = exec_sql(f'''
-            SELECT * FROM Offering
-            WHERE courseId = {courseId};
+            SELECT * FROM offering
+            WHERE course_id = {course_id};
         ''')
 
         return getAll(cur)
 
+# TODO : allow updating ratings
 
-# class Rating(Resource):
-#     @staticmethod
-#     @errorHandler
-#     def read(offeringId: int) -> tuple:
-#         cur = exec_sql(f'''
-#             SELECT practiceRating, contentRating, thoeryRating, litemeter, nratings
-#             FROM Offering
-#             WHERE offeringId = {offeringId};
-#         ''')
 
-#         return getRow(cur)
+class Rating(Create):
 
-#     @staticmethod
-#     @errorHandler
-#     def create(offeringId: int, practiceRating: float, contentRating: float, theoryRating: float, litemeter: float) -> None:
-#         cur = exec_sql(f'''
-#             UPDATE Offering
-#             SET nratings = nratings + 1,
-#                 practiceRating = practiceRating + {practiceRating},
-#                 contentRating = contentRating + {contentRating},
-#                 theoryRating = theoryRating + {theoryRating},
-#                 litemeter = litemeter + {litemeter}
-#             WHERE offeringId = {offeringId};
-#         ''')
+    @staticmethod
+    @errorHandler
+    def create(user_id: int, offering_id: int, practice_rating: float, content_rating: float, theory_rating: float, litemeter: float) -> None:
+        cur = exec_sql(f'''
+            INSERT INTO rating(user_id, offering_id, practice_rating, content_rating, theory_rating, litemeter)
+            VALUES({user_id}, {offering_id}, {practice_rating}, {content_rating}, {theory_rating}, {litemeter});
+        ''')
 
-#         return getId(cur)
+        cur = exec_sql(f'''
+            UPDATE offering
+            SET nratings = nratings + 1,
+                practice_rating = practice_rating + {practice_rating},
+                content_rating = content_rating + {content_rating},
+                theory_rating = theory_rating + {theory_rating},
+                litemeter = litemeter + {litemeter}
+            WHERE offering_id = {offering_id};
+        ''')
+
+        return None
+
 
 class Resource(Create, Read):
     @staticmethod
     @errorHandler
-    def create(offeringId: int, userId: int, type: str, link: str, about: str) -> int:
+    def create(offering_id: int, user_id: int, type: str = "", link: str = "", about: str = "") -> int:
         cur = exec_sql(f'''
-            INSERT INTO Resources(offeringId, userId, type, link, about)
-            VALUES ({offeringId}, {userId}, \'{type}\', \'{link}\', \'{about}\')
-            RETURNING resourceId;
+            INSERT INTO resource(offering_id, user_id, type, link, about)
+            VALUES ({offering_id}, {user_id}, \'{type}\', \'{link}\', \'{about}\')
+            RETURNING resource_id;
         ''')
 
         return getId(cur)
 
     @staticmethod
     @errorHandler
-    def read(resourceId: int) -> tuple:
+    def read(resource_id: int) -> tuple:
         cur = exec_sql(f'''
-            SELECT * FROM Resources
-            WHERE resourceId = {resourceId};
+            SELECT * FROM resource
+            WHERE resource_id = {resource_id};
         ''')
 
         return getRow(cur)
@@ -207,10 +204,10 @@ class Resource(Create, Read):
 class ListResources(Read):
     @staticmethod
     @errorHandler
-    def read(offeringId: int) -> list:
+    def read(offering_id: int) -> list:
         cur = exec_sql(f'''
-            SELECT * FROM Resources
-            WHERE offeringId = {offeringId};
+            SELECT * FROM resource
+            WHERE offering_id = {offering_id};
         ''')
 
         return getAll(cur)
@@ -220,21 +217,21 @@ class Slot(Create, Read):
     @staticmethod
     @errorHandler
     # dict int (day) -> dict {startTime: str, endTime: str}
-    def create(orgId: int, slotCode: str) -> int:
+    def create(org_id: int, slot_code: str) -> int:
         cur = exec_sql(f'''
-            INSERT INTO Slot(orgId, slotCode)
-            VALUES ({orgId}, \'{slotCode}\')
-            RETURNING slotId;
+            INSERT INTO slot(org_id, slot_code)
+            VALUES ({org_id}, \'{slot_code}\')
+            RETURNING slot_id;
         ''')
 
         return getId(cur)
 
     @staticmethod
     @errorHandler
-    def read(slotId: int) -> tuple:
+    def read(slot_id: int) -> tuple:
         cur = exec_sql(f'''
-            SELECT * FROM Slot
-            WHERE slotId = {slotId};
+            SELECT * FROM slot
+            WHERE slot_id = {slot_id};
         ''')
 
         return getRow(cur)
@@ -244,24 +241,24 @@ class SlotSchedule(Create, Read):
     @staticmethod
     @errorHandler
     # dict int (day) -> dict {startTime: str, endTime: str}
-    def create(slotId: int, schedule: dict) -> int:
+    def create(slot_id: int, schedule: dict) -> int:
         times = [
-            f"({slotId}, {day}, \'{schedule[day]['startTime']}\', \'{schedule[day]['endTime']}\')"
+            f"({slot_id}, {day}, \'{schedule[day]['start_time']}\', \'{schedule[day]['end_time']}\')"
             for day in schedule.keys() if day.isdigit() and int(day) < 7
         ]
         cur = exec_sql('''
-            INSERT INTO SlotSchedule(slotId, day, startTime, endTime)
+            INSERT INTO slot_schedule(slot_id, day, start_time, end_time)
             VALUES
         ''' + ' ' + (', '.join(times)) + ';')
 
-        return slotId
+        return slot_id
 
     @staticmethod
     @errorHandler
-    def read(slotId: int) -> list:
+    def read(slot_id: int) -> list:
         cur = exec_sql(f'''
-            SELECT * FROM SlotSchedule
-            WHERE slotId = {slotId};
+            SELECT * FROM slot_schedule
+            WHERE slot_id = {slot_id};
         ''')
 
         return getAll(cur)
@@ -270,10 +267,10 @@ class SlotSchedule(Create, Read):
 class ListSlots(Read):
     @staticmethod
     @errorHandler
-    def read(orgId: int) -> list:
+    def read(org_id: int) -> list:
         cur = exec_sql(f'''
-            SELECT * FROM Slot
-            WHERE orgId = {orgId};
+            SELECT * FROM slot
+            WHERE org_id = {org_id};
         ''')
 
         return getAll(cur)
@@ -284,19 +281,19 @@ class Usr(Create, Read):
     @errorHandler
     def create(email, token):
         cur = exec_sql(f'''
-            INSERT INTO Usr(email, token)
+            INSERT INTO usr(email, token)
             VALUES (\'{email}\', \'{token.to_json()}\')
-            RETURNING userId;
+            RETURNING user_id;
         ''')
 
         return getId(cur)
 
     @staticmethod
     @errorHandler
-    def read(userId: int) -> tuple:
+    def read(user_id: int) -> tuple:
         cur = exec_sql(f'''
-            SELECT * FROM Usr
-            WHERE userId = {userId};
+            SELECT * FROM usr
+            WHERE user_id = {user_id};
         ''')
 
         return getRow(cur)
@@ -305,7 +302,7 @@ class Usr(Create, Read):
     @errorHandler
     def readE(email: str) -> tuple:
         cur = exec_sql(f'''
-            SELECT * FROM Usr
+            SELECT * FROM usr
             WHERE email = \'{email}\';
         ''')
 
@@ -313,33 +310,33 @@ class Usr(Create, Read):
 
     @staticmethod
     @errorHandler
-    def update(email, token):
+    def update(email, token) -> None:
         cur = exec_sql(f'''
-            UPDATE Usr
+            UPDATE usr
             SET token = \'{token.to_json()}\'
             WHERE email = \'{email}\';
         ''')
 
-        return 'cool'
+        return None
 
 
 class Subscription(Create, Delete):
     @staticmethod
     @errorHandler
-    def create(userId: int, offeringId: int) -> None:
+    def create(user_id: int, offering_id: int) -> None:
         cur = exec_sql(f'''
-            INSERT INTO Subscriptions(userId, offeringId)
-            VALUES ({userId}, {offeringId});
+            INSERT INTO subscription(user_id, offering_id)
+            VALUES ({user_id}, {offering_id});
         ''')
 
         return None
 
     @staticmethod
     @errorHandler
-    def delete(userId: int, offeringId: int) -> None:
+    def delete(user_id: int, offering_id: int) -> None:
         cur = exec_sql(f'''
-            DELETE FROM Subscriptions
-            WHERE userId = {userId} AND offeringId = {offeringId};
+            DELETE FROM subscription
+            WHERE user_id = {user_id} AND offering_id = {offering_id};
         ''')
 
         return None
@@ -348,33 +345,53 @@ class Subscription(Create, Delete):
 class ListSubscriptions(Read):
     @staticmethod
     @errorHandler
-    def read(userId: int) -> list:
+    def read(user_id: int) -> list:
         cur = exec_sql(f'''
-            SELECT * FROM Subscriptions
-            WHERE userId = {userId};
+            SELECT * FROM subscription
+            WHERE user_id = {user_id};
         ''')
 
         return getAll(cur)
 
 
-def makeSlot(orgId, reqBody):
-    slotId = Slot.create(orgId, reqBody['slotCode'])
-    status = SlotSchedule.create(slotId, reqBody)
-    return slotId, (slotId == status)
+class Manager(Create):
+    @staticmethod
+    @errorHandler
+    def create(user_id: int, org_id: int) -> None:
+        cur = exec_sql(f'''
+            INSERT INTO manager(user_id, org_id)
+            VALUES ({user_id}, {org_id});
+        ''')
+        return None
 
 
-def getSlotIdByCode(orgId: int, slotCode: str) -> int:
+def makeSlot(org_id, reqBody):
+    slot_id = Slot.create(org_id, reqBody['slot_code'])
+    status = SlotSchedule.create(slot_id, reqBody)
+    return slot_id, (slot_id == status)
+
+
+def getSlotIdByCode(org_id: int, slot_code: str) -> int:
     cur = exec_sql(f'''
-        SELECT slotId
+        SELECT slot_id
         FROM Slot
-        WHERE orgId = {orgId} AND slotCode = \'{slotCode}\';
+        WHERE org_id = {org_id} AND slot_code = \'{slot_code}\';
     ''')
 
     return cur.fetchone()[0] if cur.rowcount else -1
+
 
 def signin(email, credentials):
     row = Usr.readE(email)
     if row == "NA":
         return Usr.create(email, credentials)
     Usr.update(email, credentials)
-    return row['userid']
+    return row['user_id']
+
+def isManager(user_id, org_id):
+    cur = exec_sql(f'''
+        SELECT * FROM manager
+        WHERE user_id = {user_id} AND org_id = {org_id};
+    ''')
+    row = getRow(cur)
+    return row != "NA"

@@ -1,109 +1,155 @@
-CREATE TABLE Organisation
+DROP TABLE IF EXISTS manager, subscription, rating, resource, usr, offering, course, slot_schedule, slot, organisation;
+
+CREATE TABLE organisation
 (
-    orgId serial PRIMARY KEY,
+    org_id serial PRIMARY KEY,
     name TEXT not null,
     type TEXT,
+
     UNIQUE(name)
 );
 
-CREATE TABLE Slot
+CREATE TABLE slot
 (
-    slotId serial PRIMARY KEY,
-    slotCode VARCHAR(6),
-    orgId INT,
-    UNIQUE(orgId, slotCode),
-    FOREIGN KEY(orgId)
-        REFERENCES Organisation(orgId)
+    slot_id serial PRIMARY KEY,
+    slot_code VARCHAR(6),
+    org_id INT,
+
+    UNIQUE(org_id, slot_code),
+
+    FOREIGN KEY(org_id)
+        REFERENCES organisation(org_id)
 );
 
-CREATE TABLE SlotSchedule
+CREATE TABLE slot_schedule
 (
-    slotId INT,
+    slot_id INT,
     day INT,
-    startTime TIME,
-    endTime TIME,
-    PRIMARY KEY(slotId, day),
-    FOREIGN KEY(slotId) REFERENCES Slot
+    start_time TIME,
+    end_time TIME,
+
+    PRIMARY KEY(slot_id, day),
+
+    FOREIGN KEY(slot_id)
+        REFERENCES slot
 );
 
-CREATE TABLE Course
+CREATE TABLE course
 (
-    courseId serial PRIMARY KEY,
-    kyc text,
-    type text,
+    course_id serial PRIMARY KEY,
+    kyc TEXT,
+    type TEXT,
     -- theory, practice, both
-    title text,
-    courseCode text,
-    orgId INT,
-    FOREIGN KEY(orgId)
-        REFERENCES Organisation(orgId),
-    UNIQUE(courseCode, orgId)
+    title TEXT,
+    course_code TEXT,
+    org_id INT,
+
+    FOREIGN KEY(org_id)
+        REFERENCES organisation(org_id),
+
+    UNIQUE(course_code, org_id)
 );
 
-CREATE TABLE Offering
+CREATE TABLE offering
 (
-    offeringId serial PRIMARY KEY,
-    courseId INT,
+    offering_id serial PRIMARY KEY,
+    course_id INT,
 
-    practiceRating REAL DEFAULT 0.0,
-    contentRating REAL DEFAULT 0.0,
-    thoeryRating REAL DEFAULT 0.0,
+    practice_rating REAL DEFAULT 0.0,
+    content_rating REAL DEFAULT 0.0,
+    theory_rating REAL DEFAULT 0.0,
     litemeter REAL DEFAULT 0.0,
     nratings INT DEFAULT 0,
 
-    referenceBooks TEXT,
-    gradingScheme TEXT,
+    cal_link TEXT,
+    grading_scheme TEXT,
     instructor TEXT,
 
-    slotId INT,
-    startDate DATE,
-    endDate DATE,
+    slot_id INT,
+    start_date DATE,
+    end_date DATE,
 
-    previousOfferingId INT DEFAULT NULL,
+    previous_offering_id INT DEFAULT NULL,
 
-    FOREIGN KEY(courseId)
-        REFERENCES Course(courseId),
+    FOREIGN KEY(course_id)
+        REFERENCES course(course_id),
 
-    FOREIGN KEY(previousOfferingId)
-        REFERENCES Offering(offeringId),
+    FOREIGN KEY(previous_offering_id)
+        REFERENCES offering(offering_id),
 
-    FOREIGN KEY(slotId)
-        REFERENCES Slot(slotId)
+    FOREIGN KEY(slot_id)
+        REFERENCES slot(slot_id)
 );
 
-CREATE TABLE Usr
+CREATE TABLE usr
 (
-    userId serial PRIMARY KEY,
+    user_id serial PRIMARY KEY,
     email TEXT UNIQUE,
     token JSON
 );
 
-CREATE TABLE Resources
+CREATE TABLE rating
 (
-    resourceId serial PRIMARY KEY,
-    offeringId INT,
-    userId INT,
+    user_id INT,
+    offering_id INT,
+    practice_rating REAL DEFAULT 0.0,
+    content_rating REAL DEFAULT 0.0,
+    theory_rating REAL DEFAULT 0.0,
+    litemeter REAL DEFAULT 0.0,
+
+    PRIMARY KEY(user_id, offering_id),
+
+    FOREIGN KEY(user_id)
+        REFERENCES usr(user_id),
+
+    FOREIGN KEY(offering_id)
+        REFERENCES offering(offering_id)
+);
+
+CREATE TABLE manager
+(
+    user_id INT,
+    org_id INT,
+    PRIMARY KEY(user_id, org_id),
+
+    FOREIGN KEY(user_id)
+        REFERENCES usr(user_id),
+
+    FOREIGN KEY(org_id)
+        REFERENCES organisation(org_id)
+);
+
+CREATE TABLE resource
+(
+    resource_id serial PRIMARY KEY,
+    offering_id INT,
+    user_id INT,
     type TEXT,
     --test, quiz, exam, midsem, tutorial, assignment
+
     link TEXT,
     --optional
+
     about TEXT,
 
-    FOREIGN KEY(offeringId)
-        REFERENCES Offering(offeringId),
+    FOREIGN KEY(offering_id)
+        REFERENCES offering(offering_id),
 
-    FOREIGN KEY(userId)
-        REFERENCES Usr(userId)
+    FOREIGN KEY(user_id)
+        REFERENCES usr(user_id)
 );
 
-CREATE TABLE Subscriptions
+CREATE TABLE subscription
 (
-    userId INT not null,
-    offeringId INT not null,
+    user_id INT not null,
+    offering_id INT not null,
 
-    FOREIGN KEY(userId)
-        REFERENCES Usr(userId),
+    FOREIGN KEY(user_id)
+        REFERENCES usr(user_id),
 
-    FOREIGN KEY(offeringId)
-        REFERENCES Offering(offeringId)
+    FOREIGN KEY(offering_id)
+        REFERENCES offering(offering_id)
 );
+
+
+SELECT version();

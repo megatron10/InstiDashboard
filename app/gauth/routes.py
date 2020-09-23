@@ -96,6 +96,15 @@ def calendar_service(credentials):
 def index():
     return print_index_table()
 
+@auth_error_on_fail
+@login_required
+def get_credentials_obj():
+    authorized_user_info = dbOps.Usr.read(flask.session['id'])['token']
+
+    credentials = google.oauth2.credentials.Credentials.from_authorized_user_info(
+        authorized_user_info
+    )
+    return credentials
 
 @bp.route('/test')
 @no_cache
